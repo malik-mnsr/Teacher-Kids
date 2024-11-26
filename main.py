@@ -1,5 +1,5 @@
 import pygame
-from random import choice
+from random import choice, randint
 
 # Constants for the screen dimensions and tile size
 TILE = 100
@@ -13,6 +13,10 @@ cols, rows = GRID_WIDTH // TILE, GRID_HEIGHT // TILE
 pygame.init()
 sc = pygame.display.set_mode((GRID_WIDTH + CONTROL_PANEL_WIDTH, GRID_HEIGHT))
 clock = pygame.time.Clock()
+
+# Load the candy icon image
+candy_icon = pygame.image.load('assets/candy.png')
+candy_icon = pygame.transform.scale(candy_icon, (TILE // 2, TILE // 2))  # Scale the candy icon to fit the tile size
 
 # Cell class to represent each tile of the grid
 class Cell:
@@ -87,11 +91,22 @@ def remove_walls(current, next):
 
 # Function to reset the maze
 def reset_maze():
-    global grid_cells, current_cell, stack, maze_completed
+    global grid_cells, current_cell, stack, maze_completed, candies
     grid_cells = [Cell(col, row) for row in range(rows) for col in range(cols)]
     current_cell = grid_cells[0]
     stack = []
-    maze_completed = False  # Ensure the maze continues to work correctly after reset
+    maze_completed = False
+    candies = []  # Reset the candies
+
+
+def generate_candies():
+    global candies
+    candies = []
+    for _ in range(20):
+        # Generate random positions for candies (x, y)
+        x = randint(0, cols - 1)
+        y = randint(0, rows - 1)
+        candies.append((x, y))  # Store as (x, y) positions
 
 
 # Create grid of cells
@@ -99,6 +114,7 @@ grid_cells = [Cell(col, row) for row in range(rows) for col in range(cols)]
 current_cell = grid_cells[0]
 stack = []
 maze_completed = False
+candies = []  # This will store the positions of the candies
 
 class Button:
     def __init__(self, x, y, width, height, color, text):
@@ -129,9 +145,8 @@ class Button:
 
 # Create the reset button in the control panel area
 reset_button = Button(GRID_WIDTH + 50, 20, CONTROL_PANEL_WIDTH - 100, 50, pygame.Color('green'), "Reset Maze")
-# Create the new "Generate Agents" button
-generate_agents_button = Button(GRID_WIDTH + 50, 80, CONTROL_PANEL_WIDTH - 100, 50, pygame.Color('blue'), "Agents")
-
+# Create the "Generate Candies" button
+generate_candies_button = Button(GRID_WIDTH + 50, 80, CONTROL_PANEL_WIDTH - 100, 50, pygame.Color('purple'), "Generate Candies")
 
 while True:
     sc.fill(pygame.Color('darkslategray'))
@@ -145,13 +160,24 @@ while True:
         if reset_button.is_pressed(event):
             reset_maze()
 
-    # Draw the reset button
+        # Check if the generate candies button is pressed
+        if generate_candies_button.is_pressed(event):
+            generate_candies()
+
+    # Draw the reset and generate candies buttons
     reset_button.draw()
-    generate_agents_button.draw()
+    generate_candies_button.draw()
+
     # Draw all cells and their walls in the grid (on the left side of the screen)
     [cell.draw() for cell in grid_cells]
     current_cell.visited = True
     current_cell.draw_current_cell()
+
+    # Draw candies using the candy icon
+    for candy in candies:
+        x, y = candy
+        # Draw the candy icon in the center of the grid cell
+        sc.blit(candy_icon, (x * TILE + TILE // 4, y * TILE + TILE // 4))
 
     # Find the next unvisited neighbor and move there
     next_cell = current_cell.check_neighbours()
